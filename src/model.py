@@ -53,6 +53,7 @@ class Model:
         # initialize TF
         self.sess, self.saver = self.setup_tf()
 
+
     def setup_cnn(self) -> None:
         """Create CNN layers."""
         cnn_in4d = tf.expand_dims(input=self.input_imgs, axis=3)
@@ -216,13 +217,24 @@ class Model:
 
     def train_batch(self, batch: Batch) -> float:
         """Feed a batch into the NN to train it."""
+        print('1')
         num_batch_elements = len(batch.imgs)
         max_text_len = batch.imgs[0].shape[0] // 4
+        print('2')
         sparse = self.to_sparse(batch.gt_texts)
         eval_list = [self.optimizer, self.loss]
+        print('3')
         feed_dict = {self.input_imgs: batch.imgs, self.gt_texts: sparse,
                      self.seq_len: [max_text_len] * num_batch_elements, self.is_train: True}
+        print('4')
+        # print(f'eval_list = {eval_list}')
+        print(f'sparse = {sparse[2]}')
+        print(f'max_text_len = {max_text_len}')
+        print(f'num_batch_elements = {num_batch_elements}')
+        # print(f'feed_dict = {feed_dict}')
+
         _, loss_val = self.sess.run(eval_list, feed_dict)
+        print('5')
         self.batches_trained += 1
         return loss_val
 

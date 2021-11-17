@@ -7,6 +7,7 @@ import editdistance
 from path import Path
 
 from dataloader_iam import DataLoaderIAM, Batch
+from dataloader_mybank import DataLoaderMyBank
 from model import Model, DecoderType
 from preprocessor import Preprocessor
 
@@ -37,7 +38,7 @@ def write_summary(char_error_rates: List[float], word_accuracies: List[float]) -
 
 
 def train(model: Model,
-          loader: DataLoaderIAM,
+          loader: DataLoaderMyBank,
           line_mode: bool,
           early_stopping: int = 25) -> None:
     """Trains NN."""
@@ -59,6 +60,12 @@ def train(model: Model,
             iter_info = loader.get_iterator_info()
             batch = loader.get_next()
             batch = preprocessor.process_batch(batch)
+
+            print(type(batch.imgs))
+            print(f'imgs = {len(batch.imgs)}')
+            for i in range(batch.batch_size):
+                print(batch.imgs[i].shape)
+                print(batch.gt_texts[i])
             loss = model.train_batch(batch)
             print(f'Epoch: {epoch} Batch: {iter_info[0]}/{iter_info[1]} Loss: {loss}')
 
@@ -86,7 +93,7 @@ def train(model: Model,
             break
 
 
-def validate(model: Model, loader: DataLoaderIAM, line_mode: bool) -> Tuple[float, float]:
+def validate(model: Model, loader: DataLoaderMyBank, line_mode: bool) -> Tuple[float, float]:
     """Validates NN."""
     print('Validate NN')
     loader.validation_set()
@@ -157,7 +164,7 @@ def main():
     # train or validate on IAM dataset
     if args.mode in ['train', 'validate']:
         # load training data, create TF model
-        loader = DataLoaderIAM(args.data_dir, args.batch_size, fast=args.fast)
+        loader = DataLoaderMyBank(args.data_dir, args.batch_size, fast=args.fast)
         char_list = loader.char_list
 
         # when in line mode, take care to have a whitespace in the char list

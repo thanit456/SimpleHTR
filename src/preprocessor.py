@@ -176,6 +176,8 @@ class Preprocessor:
 
 
 def main():
+    import matplotlib
+    matplotlib.use('TkAgg')
     import matplotlib.pyplot as plt
 
     img = cv2.imread('../data/test.png', cv2.IMREAD_GRAYSCALE)

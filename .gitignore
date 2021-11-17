@@ -6,3 +6,13 @@ notes/
 *.pyc
 .idea/
 dump/
+
+toDataset/
+line-model/
+old-model/
+model/*
+data/img/
+data/gt/
+data/lmdb/
+*.ipynb
+.*/
