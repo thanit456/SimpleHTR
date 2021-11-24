@@ -132,13 +132,13 @@ def infer(model: Model, fn_img: Path) -> None:
     recognized, probability = model.infer_batch(batch, True)
     print(f'Recognized: "{recognized[0]}"')
     print(f'Probability: {probability[0]}')
-
+    return recognized, probability
 
 def main():
     """Main function."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--mode', choices=['train', 'validate', 'infer'], default='infer')
+    parser.add_argument('--mode', choices=['train', 'validate', 'infer', 'predict'], default='infer')
     parser.add_argument('--decoder', choices=['bestpath', 'beamsearch', 'wordbeamsearch'], default='bestpath')
     parser.add_argument('--batch_size', help='Batch size.', type=int, default=100)
     parser.add_argument('--data_dir', help='Directory containing IAM dataset.', type=Path, required=False)
@@ -147,6 +147,7 @@ def main():
     parser.add_argument('--img_file', help='Image used for inference.', type=Path, default='../data/word.png')
     parser.add_argument('--early_stopping', help='Early stopping epochs.', type=int, default=25)
     parser.add_argument('--dump', help='Dump output of NN to CSV file(s).', action='store_true')
+    parser.add_argument('--csv_path', help="Path to predictions", type=str, default='./predictions.csv')
     args = parser.parse_args()
 
     # set chosen CTC decoder
@@ -184,6 +185,22 @@ def main():
         model = Model(list(open(FilePaths.fn_char_list).read()), decoder_type, must_restore=True, dump=args.dump)
         infer(model, args.img_file)
 
-
+    elif args.mode == 'predict':
+        model = Model(list(open(FilePaths.fn_char_list).read()), decoder_type, must_restore=True, dump=args.dump)
+        # * img_file = dir image path 
+        import pandas as pd 
+        import glob
+        from tqdm import tqdm 
+        df = pd.DataFrame()
+        for img_path in tqdm(glob.glob(args.img_file)): 
+            recognized, probability = infer(model, args.img_file) 
+            tmp_df = pd.DataFrame({
+                'img_path': [img_path],
+                'pred': [recognized], 
+                'prob': [probability] 
+            })
+            df = df.append(tmp_df, ignore_index=True)
+        df.to_csv(args.csv_path, index=False)
+        
 if __name__ == '__main__':
     main()
