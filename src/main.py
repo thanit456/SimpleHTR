@@ -134,22 +134,29 @@ def infer(model: Model, fn_img: Path) -> None:
     # print(f'Probability: {probability[0]}')
     return recognized, probability
 
-def preprocess(fn_img: Path): 
-    img = cv2.imread(fn_img, cv2.IMREAD_GRAYSCALE)
-    assert img is not None
+def create_annot_df(txt_path):
+    import pandas as pd 
+    df = pd.read_fwf(txt_path, header=None) 
+    df['img_path'] = df[0].apply(lambda x: x.split('\t')[0]) 
+    df['gt'] = df[0].apply(lambda x: x.split('\t')[1])
+    df.drop(0, axis=1, inplace=True)
+                                                
+    return df
 
-    preprocessor = Preprocessor(get_img_size(), dynamic_width=True, padding=16)
-    img = preprocessor.process_img(img)
-    return img
+def infer_batch(model: Model, fn_imgs, gt_texts, line_mode):
+    imgs = [] 
+    for fn_img in fn_imgs:
+        img = cv2.imread(fn_img, cv2.IMREAD_GRAYSCALE)
+        assert img is not None
+        imgs.append(img)
+    batch = Batch(imgs, gt_texts, len(imgs))
 
-import numpy as np 
-vec_preprocess = np.vectorize(preprocess)
+    # preprocessor = Preprocessor(get_img_size(), dynamic_width=True, padding=16)
+    preprocessor = Preprocessor(get_img_size(line_mode), line_mode=line_mode)
 
-def infer_batch(model: Model, fn_imgs) -> None:
-    preprocessed_imgs = vec_preprocess(fn_imgs)  
+    preprocessed_batch = preprocessor.process_batch(batch)
 
-    batch = Batch(preprocessed_imgs, None, len(fn_imgs))
-    recognized, probability = model.infer_batch(batch, True)
+    recognized, probability = model.infer_batch(preprocessed_batch, True)
     # print(f'Recognized: "{recognized[0]}"')
     # print(f'Probability: {probability[0]}')
     return recognized, probability
@@ -167,7 +174,7 @@ def main():
     parser.add_argument('--img_file', help='Image used for inference.', type=Path, default='../data/word.png')
     parser.add_argument('--early_stopping', help='Early stopping epochs.', type=int, default=25)
     parser.add_argument('--dump', help='Dump output of NN to CSV file(s).', action='store_true')
-    parser.add_argument('--csv_path', help="Path to predictions", type=str, default='./predictions.csv')
+    parser.add_argument('--csv_path', help="Path to predictions", type=str, default='../predictions/predictions.csv')
     args = parser.parse_args()
 
     # set chosen CTC decoder
@@ -212,9 +219,10 @@ def main():
         import glob
         from tqdm import tqdm 
 
-        df = pd.DataFrame()
-        img_paths = glob.glob(f'{args.img_file}/images/*/*')
-        img_paths.extend(glob.glob(f'{args.img_file}/img/*/*'))
+        annot_df = create_annot_df(f'{args.img_file}/gt.txt')
+        img_paths = [f'{args.img_file}/{e}' for e in annot_df['img_path'].tolist()]
+        # img_paths = glob.glob(f'{args.img_file}/images/*/*')
+        # img_paths.extend(glob.glob(f'{args.img_file}/img/*/*'))
 
         # pack as batch  
         batch_size = args.batch_size
@@ -231,16 +239,17 @@ def main():
             count += 1
         if len(tmp_batch_img_path) != 0:
             batch_img_paths.append(tmp_batch_img_path) 
-
+        
+        preds = [] 
+        probs = [] 
         for batch_img_path in tqdm(batch_img_paths):
-            recognized, probability = infer(model, batch_img_path) 
-            tmp_df = pd.DataFrame({
-                'img_path': batch_img_path,
-                'pred': recognized, 
-                'prob': probability 
-            })
-            df = df.append(tmp_df, ignore_index=True)
-        df.to_csv(args.csv_path, index=False)
+            gt_texts = annot_df[annot_df['img_path'].isin([e.replace(args.img_file + '/', '') for e in batch_img_path])]['gt'].tolist()
+            recognized, probability = infer_batch(model, batch_img_path, gt_texts, args.line_mode) 
+            preds += recognized
+            probs += probability.tolist()
+        annot_df['pred'] = preds
+        annot_df['prob'] = probs
+        annot_df.to_csv(args.csv_path, index=False)
         
 if __name__ == '__main__':
     main()
