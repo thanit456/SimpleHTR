@@ -192,7 +192,7 @@ def main():
         import glob
         from tqdm import tqdm 
         df = pd.DataFrame()
-        for img_path in tqdm(glob.glob(args.img_file)): 
+        for img_path in tqdm(glob.glob(f'{args.img_file}/images/*/*')): 
             recognized, probability = infer(model, args.img_file) 
             tmp_df = pd.DataFrame({
                 'img_path': [img_path],
