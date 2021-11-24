@@ -32,7 +32,6 @@ class DataLoaderMyBank:
         self.fast = fast
         if fast:
             print(str(data_dir / 'lmdb')) 
-            exit()
             self.env = lmdb.open(str(data_dir / 'lmdb'), readonly=True)
 
         self.data_augmentation = False
@@ -60,8 +59,7 @@ class DataLoaderMyBank:
             # if line_split[0] in bad_samples_reference:
             #     print('Ignoring known broken image:', file_name)
             #     continue
-            
-            file_path, gt_text = line.strip().split() 
+            file_path, gt_text = line.strip().split('\t') 
             
             file_name = file_path[file_path.find('/') + 1:]
 
@@ -121,8 +119,6 @@ class DataLoaderMyBank:
         if self.fast:
             with self.env.begin() as txn:
                 basename = Path(self.samples[i].file_path).basename()
-                # ? 
-                print(self.env)
                 data = txn.get(basename.encode("ascii"))
                 img = pickle.loads(data)
         else:

@@ -48,7 +48,7 @@ class Model:
         self.batches_trained = 0
         self.update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(self.update_ops):
-            self.optimizer = tf.compat.v1.train.AdamOptimizer().minimize(self.loss)
+            self.optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=1e-3).minimize(self.loss)
 
         # initialize TF
         self.sess, self.saver = self.setup_tf()
@@ -217,24 +217,13 @@ class Model:
 
     def train_batch(self, batch: Batch) -> float:
         """Feed a batch into the NN to train it."""
-        print('1')
         num_batch_elements = len(batch.imgs)
         max_text_len = batch.imgs[0].shape[0] // 4
-        print('2')
         sparse = self.to_sparse(batch.gt_texts)
         eval_list = [self.optimizer, self.loss]
-        print('3')
         feed_dict = {self.input_imgs: batch.imgs, self.gt_texts: sparse,
                      self.seq_len: [max_text_len] * num_batch_elements, self.is_train: True}
-        print('4')
-        # print(f'eval_list = {eval_list}')
-        print(f'sparse = {sparse[2]}')
-        print(f'max_text_len = {max_text_len}')
-        print(f'num_batch_elements = {num_batch_elements}')
-        # print(f'feed_dict = {feed_dict}')
-
         _, loss_val = self.sess.run(eval_list, feed_dict)
-        print('5')
         self.batches_trained += 1
         return loss_val
 
@@ -316,3 +305,6 @@ class Model:
         """Save model to file."""
         self.snap_ID += 1
         self.saver.save(self.sess, '../model/snapshot', global_step=self.snap_ID)
+
+    # def export_tf_model(self) -> None: 
+    #     self.

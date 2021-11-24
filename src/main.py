@@ -60,12 +60,6 @@ def train(model: Model,
             iter_info = loader.get_iterator_info()
             batch = loader.get_next()
             batch = preprocessor.process_batch(batch)
-
-            print(type(batch.imgs))
-            print(f'imgs = {len(batch.imgs)}')
-            for i in range(batch.batch_size):
-                print(batch.imgs[i].shape)
-                print(batch.gt_texts[i])
             loss = model.train_batch(batch)
             print(f'Epoch: {epoch} Batch: {iter_info[0]}/{iter_info[1]} Loss: {loss}')
 

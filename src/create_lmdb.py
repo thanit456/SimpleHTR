@@ -12,7 +12,7 @@ args = parser.parse_args()
 # 2GB is enough for IAM dataset
 print('open...')
 assert not (args.data_dir / 'lmdb').exists()
-env = lmdb.open(str(args.data_dir / 'lmdb'), map_size=1024 * 1024 * 1024 * 8)
+env = lmdb.open(str(args.data_dir / 'lmdb'), map_size=1024 * 1024 * 1024 * 12)
 
 
 print('go over files...')
