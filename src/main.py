@@ -134,6 +134,26 @@ def infer(model: Model, fn_img: Path) -> None:
     # print(f'Probability: {probability[0]}')
     return recognized, probability
 
+def preprocess(fn_img: Path): 
+    img = cv2.imread(fn_img, cv2.IMREAD_GRAYSCALE)
+    assert img is not None
+
+    preprocessor = Preprocessor(get_img_size(), dynamic_width=True, padding=16)
+    img = preprocessor.process_img(img)
+    return img
+
+import numpy as np 
+vec_preprocess = np.vectorize(preprocess)
+
+def infer_batch(model: Model, fn_imgs) -> None:
+    preprocessed_imgs = vec_preprocess(fn_imgs)  
+
+    batch = Batch(preprocessed_imgs, None, len(fn_imgs))
+    recognized, probability = model.infer_batch(batch, True)
+    # print(f'Recognized: "{recognized[0]}"')
+    # print(f'Probability: {probability[0]}')
+    return recognized, probability
+
 def main():
     """Main function."""
     parser = argparse.ArgumentParser()
@@ -196,12 +216,28 @@ def main():
         img_paths = glob.glob(f'{args.img_file}/images/*/*')
         img_paths.extend(glob.glob(f'{args.img_file}/img/*/*'))
 
-        for img_path in tqdm(img_paths): 
-            recognized, probability = infer(model, img_path) 
+        # pack as batch  
+        batch_size = args.batch_size
+        batch_img_paths = []  
+        tmp_batch_img_path = [] 
+        count = 0 
+        for img_path in img_paths:  
+            if count == batch_size: 
+                batch_img_paths.append(tmp_batch_img_path) 
+                count = 0 
+                tmp_batch_img_path = [] 
+            
+            tmp_batch_img_path.append(img_path)
+            count += 1
+        if len(tmp_batch_img_path) != 0:
+            batch_img_paths.append(tmp_batch_img_path) 
+
+        for batch_img_path in tqdm(batch_img_paths):
+            recognized, probability = infer(model, batch_img_path) 
             tmp_df = pd.DataFrame({
-                'img_path': [img_path],
-                'pred': [recognized], 
-                'prob': [probability] 
+                'img_path': batch_img_path,
+                'pred': recognized, 
+                'prob': probability 
             })
             df = df.append(tmp_df, ignore_index=True)
         df.to_csv(args.csv_path, index=False)
