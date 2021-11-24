@@ -130,8 +130,8 @@ def infer(model: Model, fn_img: Path) -> None:
 
     batch = Batch([img], None, 1)
     recognized, probability = model.infer_batch(batch, True)
-    print(f'Recognized: "{recognized[0]}"')
-    print(f'Probability: {probability[0]}')
+    # print(f'Recognized: "{recognized[0]}"')
+    # print(f'Probability: {probability[0]}')
     return recognized, probability
 
 def main():
@@ -191,9 +191,13 @@ def main():
         import pandas as pd 
         import glob
         from tqdm import tqdm 
+
         df = pd.DataFrame()
-        for img_path in tqdm(glob.glob(f'{args.img_file}/images/*/*')): 
-            recognized, probability = infer(model, args.img_file) 
+        img_paths = glob.glob(f'{args.img_file}/images/*/*')
+        img_paths.extend(glob.glob(f'{args.img_file}/img/*/*'))
+
+        for img_path in tqdm(img_paths): 
+            recognized, probability = infer(model, img_path) 
             tmp_df = pd.DataFrame({
                 'img_path': [img_path],
                 'pred': [recognized], 
