@@ -220,6 +220,7 @@ def main():
         from tqdm import tqdm 
 
         annot_df = create_annot_df(f'{args.img_file}/gt.txt')
+        print(annot_df)
         img_paths = [f'{args.img_file}/{e}' for e in annot_df['img_path'].tolist()]
         # img_paths = glob.glob(f'{args.img_file}/images/*/*')
         # img_paths.extend(glob.glob(f'{args.img_file}/img/*/*'))
